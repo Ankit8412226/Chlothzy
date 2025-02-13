@@ -1,11 +1,8 @@
-// config/dbConnect.js
-
 const mongoose = require("mongoose");
 require("dotenv").config();
 
 const dbConnect = async () => {
   try {
-    // Use the MongoDB URI from the .env file
     const conn = await mongoose.connect(process.env.DB_URL);
 
     console.log(`MongoDB connected: ${conn.connection.host}`);
