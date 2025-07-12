@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import AboutUs from './components/AboutUs';
 import CartCheckoutFlow from "./components/CartCheckoutFlow";
 import CategoryTabs from './components/CategoryTabs';
+import ContactUs from "./components/ContactUs";
 import Footer from './components/Footer';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Newsletter from './components/Newsletter';
 import ProductDetail from './components/ProductDetail';
 import ProductList from './components/ProductList';
+import ProductsPage from './components/ProductsPage';
 import { products } from './data/products';
 
 function App() {
@@ -67,6 +70,9 @@ function App() {
               />
             } />
             <Route path = "/cart" element = {<CartCheckoutFlow/>} />
+            <Route path="/about" element = {<AboutUs/>} />
+            <Route path= "/contact" element = {<ContactUs />} />
+            <Route path='/products' element = {<ProductsPage/>} />
           </Routes>
         </div>
       </Router>
