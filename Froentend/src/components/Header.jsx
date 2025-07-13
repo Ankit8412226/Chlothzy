@@ -1,8 +1,9 @@
-import { Home, Info, Menu, MessageCircle, Package, ShoppingCart, X } from 'lucide-react';
+import { Home, Info, Menu, MessageCircle, Package, ShoppingCart, User, X } from 'lucide-react';
 import { useState } from 'react';
 
-const Header = ({ cart = [] }) => {
+const Header = ({ cart = [], isLoggedIn = false, user = null }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
@@ -12,6 +13,15 @@ const Header = ({ cart = [] }) => {
     { name: 'About', href: '/about', icon: Info },
     { name: 'Contact', href: '/contact', icon: MessageCircle }
   ];
+
+  const handleAuthRedirect = (type) => {
+    window.location.href = `/auth?mode=${type}`;
+  };
+
+  const handleLogout = () => {
+    // Handle logout logic here
+    console.log('Logout clicked');
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
@@ -60,6 +70,65 @@ const Header = ({ cart = [] }) => {
               <span className="text-base">Search</span>
             </button>
 
+            {/* Auth Section */}
+            {isLoggedIn ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:text-violet-600 transition-colors rounded-lg hover:bg-violet-50"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="hidden sm:block font-medium text-base">
+                    {user?.name || 'User'}
+                  </span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* User Dropdown */}
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                    <a
+                      href="/profile"
+                      className="block px-4 py-3 text-gray-700 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                    >
+                      Profile
+                    </a>
+                    <a
+                      href="/orders"
+                      className="block px-4 py-3 text-gray-700 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                    >
+                      Orders
+                    </a>
+                    <a
+                      href="/settings"
+                      className="block px-4 py-3 text-gray-700 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                    >
+                      Settings
+                    </a>
+                    <hr className="my-2 border-gray-200" />
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => handleAuthRedirect('login')}
+                className="hidden md:flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg hover:from-violet-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+              >
+                <User className="w-5 h-5" />
+                <span>Sign In</span>
+              </button>
+            )}
+
             {/* Cart */}
             <a
               href="/cart"
@@ -107,6 +176,56 @@ const Header = ({ cart = [] }) => {
                   />
                 </div>
               </div>
+
+              {/* Mobile Auth Section */}
+              {!isLoggedIn && (
+                <div className="mb-6">
+                  <button
+                    onClick={() => handleAuthRedirect('login')}
+                    className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl hover:from-violet-700 hover:to-purple-700 transition-all duration-200 shadow-md font-medium"
+                  >
+                    <User className="w-5 h-5" />
+                    <span className="text-base">Sign In</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Mobile User Menu */}
+              {isLoggedIn && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl border border-violet-200">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 text-base">
+                        {user?.name || 'User'}
+                      </span>
+                      <p className="text-sm text-gray-600">{user?.email || 'user@example.com'}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <a
+                      href="/profile"
+                      className="block px-3 py-2 text-gray-700 hover:text-violet-600 hover:bg-white rounded-lg transition-colors"
+                    >
+                      Profile
+                    </a>
+                    <a
+                      href="/orders"
+                      className="block px-3 py-2 text-gray-700 hover:text-violet-600 hover:bg-white rounded-lg transition-colors"
+                    >
+                      Orders
+                    </a>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Mobile Navigation Links */}
               <div className="space-y-2">

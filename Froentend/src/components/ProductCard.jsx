@@ -13,7 +13,7 @@ const ProductCard = ({ product, onAddToCart }) => {
   };
 
   return (
-    <Link to={`/product/${product.id}`} className="block">
+    <Link to={`/product/${product._id}`} className="block">
       <div
         className="bg-white/80 backdrop-blur-sm rounded-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden group border border-violet-200/50"
         onMouseEnter={() => setIsHovered(true)}
@@ -45,7 +45,7 @@ const ProductCard = ({ product, onAddToCart }) => {
 
           {/* Category Badge */}
           <div className="absolute top-4 left-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-            {product.category}
+            {product.categoryId.name}
           </div>
         </div>
 

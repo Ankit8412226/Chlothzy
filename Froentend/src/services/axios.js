@@ -1,13 +1,18 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// Create axios instance
+
+const baseURL = import.meta.env.VITE_API_BASE_URL
+console.log('✅ VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+
+
+
 const api = axios.create({
-  baseURL: 'https://fakestoreapi.com', // Using fake store API for demo
+  baseURL,
   timeout: 10000,
 });
 
-// Request interceptor
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
@@ -16,12 +21,10 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -29,7 +32,7 @@ api.interceptors.response.use(
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       toast.error('Session expired. Please login again.');
-      window.location.href = '/login';
+
     }
     return Promise.reject(error);
   }

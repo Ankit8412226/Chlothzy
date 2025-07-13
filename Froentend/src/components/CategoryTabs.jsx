@@ -1,10 +1,32 @@
-import { categories } from '../data/products';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import api from '../services/axios';
 
 const CategoryTabs = ({ selectedCategory, onCategoryChange }) => {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get('/category/');
+        const categoryNames = response.data?.categories?.map((cat) => cat.name);
+        // assuming response is array of { name }
+        setCategories(categoryNames || []);
+      } catch (error) {
+        toast.error('Failed to load categories');
+        console.error('Category fetch error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   return (
     <section className="py-12 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 relative overflow-hidden">
-
-
       <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
         <div className="text-center mb-8">
@@ -18,29 +40,31 @@ const CategoryTabs = ({ selectedCategory, onCategoryChange }) => {
 
         {/* Category Buttons */}
         <div className="flex flex-wrap justify-center gap-3 md:gap-4">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => onCategoryChange(category)}
-              className={`group relative px-6 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 overflow-hidden ${
-                selectedCategory === category
-                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg scale-105'
-                  : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white hover:text-violet-600 shadow-md hover:shadow-xl border border-violet-200/50'
-              }`}
-            >
-              {/* Hover effect overlay */}
-              {selectedCategory !== category && (
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              )}
+          {loading ? (
+            <span className="text-gray-500">Loading categories...</span>
+          ) : (
+            categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => onCategoryChange(category)}
+                className={`group relative px-6 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 overflow-hidden ${
+                  selectedCategory === category
+                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg scale-105'
+                    : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white hover:text-violet-600 shadow-md hover:shadow-xl border border-violet-200/50'
+                }`}
+              >
+                {selectedCategory !== category && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                )}
 
-              {/* Active category glow effect */}
-              {selectedCategory === category && (
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-700 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              )}
+                {selectedCategory === category && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-violet-700 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                )}
 
-              <span className="relative z-10">{category}</span>
-            </button>
-          ))}
+                <span className="relative z-10">{category}</span>
+              </button>
+            ))
+          )}
         </div>
 
         {/* Decorative Elements */}

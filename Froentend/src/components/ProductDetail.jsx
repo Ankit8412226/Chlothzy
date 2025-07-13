@@ -1,15 +1,48 @@
-import { ArrowLeft, Heart, RefreshCw, Shield, ShoppingCart, Sparkles, Star, Truck } from 'lucide-react';
-import { useState } from 'react';
+import {
+  ArrowLeft,
+  Heart,
+  RefreshCw,
+  Shield,
+  ShoppingCart,
+  Sparkles,
+  Star,
+  Truck,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import api from '../services/axios';
 
-const ProductDetail = ({ products, onAddToCart }) => {
+const ProductDetail = ({ onAddToCart }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [product, setProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isLiked, setIsLiked] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const product = products.find(p => p.id === parseInt(id));
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const res = await api.get(`/products/${id}`);
+        setProduct(res.data.product);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-violet-50">
+        <div className="text-xl text-violet-600 font-semibold animate-pulse">Loading product...</div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -46,7 +79,6 @@ const ProductDetail = ({ products, onAddToCart }) => {
       onAddToCart(product);
     }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 relative overflow-hidden">
       {/* Animated Background Elements */}
