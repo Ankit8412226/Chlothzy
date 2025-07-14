@@ -5,7 +5,7 @@ import ProductCard from './ProductCard';
 import toast from 'react-hot-toast';
 import api from '../services/axios';
 
-const ProductsPage = ({onAddToCart}) => {
+const ProductsPage = ({ onAddToCart, cartLoading }) => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +13,6 @@ const ProductsPage = ({onAddToCart}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState('name');
-  const [cart, setCart] = useState([]);
 
   // Frontend pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -151,23 +150,6 @@ const ProductsPage = ({onAddToCart}) => {
     };
   }, [displayedProducts, hasMore, productsLoading]);
 
-  // Updated addToCart function with quantity handling
-  const addToCart = (product) => {
-    setCart(prev => {
-      const existingItem = prev.find(item => item.id === product.id || item._id === product._id);
-      if (existingItem) {
-        toast.success(`${product.name} quantity increased`);
-        return prev.map(item =>
-          (item.id === product.id || item._id === product._id)
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      toast.success(`${product.name} added to cart`);
-      return [...prev, { ...product, quantity: 1 }];
-    });
-  };
-
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedCategory('');
@@ -175,44 +157,41 @@ const ProductsPage = ({onAddToCart}) => {
     setCurrentPage(1);
   };
 
-  // Get total items in cart (considering quantities)
-  const totalCartItems = cart.reduce((total, item) => total + item.quantity, 0);
-
-  if (loading ) {
+  if (loading) {
     return (
       <div className="text-center py-20">
-      <div className="relative inline-block mb-8">
-        <div className="text-6xl mb-4 relative z-10 animate-spin">⚡</div>
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full blur-xl opacity-20 scale-150"></div>
+        <div className="relative inline-block mb-8">
+          <div className="text-6xl mb-4 relative z-10 animate-spin">⚡</div>
+          <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full blur-xl opacity-20 scale-150"></div>
+        </div>
+        <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-12 max-w-lg mx-auto border border-white/50 shadow-xl">
+          <h3 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            Loading Products...
+          </h3>
+          <p className="text-gray-600 text-lg leading-relaxed">
+            Please wait while we fetch the latest products for you.
+          </p>
+        </div>
       </div>
-      <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-12 max-w-lg mx-auto border border-white/50 shadow-xl">
-        <h3 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-4">
-          Loading Products...
-        </h3>
-        <p className="text-gray-600 text-lg leading-relaxed">
-          Please wait while we fetch the latest products for you.
-        </p>
-      </div>
-    </div>
     );
   }
 
-  if (productsLoading ) {
+  if (productsLoading) {
     return (
       <div className="text-center py-20 bg-white">
-      <div className="relative inline-block mb-8">
-        <div className="text-6xl mb-4 relative z-10 animate-spin">⚡</div>
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full blur-xl opacity-20 scale-150"></div>
+        <div className="relative inline-block mb-8">
+          <div className="text-6xl mb-4 relative z-10 animate-spin">⚡</div>
+          <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full blur-xl opacity-20 scale-150"></div>
+        </div>
+        <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-12 max-w-lg mx-auto border border-white/50 shadow-xl">
+          <h3 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            Loading Products...
+          </h3>
+          <p className="text-gray-600 text-lg leading-relaxed">
+            Please wait while we fetch the latest products for you.
+          </p>
+        </div>
       </div>
-      <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-12 max-w-lg mx-auto border border-white/50 shadow-xl">
-        <h3 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-4">
-          Loading Products...
-        </h3>
-        <p className="text-gray-600 text-lg leading-relaxed">
-          Please wait while we fetch the latest products for you.
-        </p>
-      </div>
-    </div>
     );
   }
 
@@ -296,9 +275,6 @@ const ProductsPage = ({onAddToCart}) => {
             <p className="text-gray-600">
               Showing {displayedProducts.length} of {filteredProducts.length} products
             </p>
-            <p className="text-sm text-violet-600">
-              Cart: {totalCartItems} items
-            </p>
           </div>
         </div>
       </section>
@@ -321,7 +297,8 @@ const ProductsPage = ({onAddToCart}) => {
                   >
                     <ProductCard
                       product={product}
-                      onAddToCart={addToCart}
+                      onAddToCart={onAddToCart}
+                      cartLoading={cartLoading}
                     />
                   </div>
                 ))}

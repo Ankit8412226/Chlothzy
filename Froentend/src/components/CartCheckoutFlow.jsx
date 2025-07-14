@@ -1,4 +1,3 @@
-
 import {
   ArrowRight,
   Award,
@@ -18,48 +17,18 @@ import {
   Truck,
   Users
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
-const CartCheckoutFlow = () => {
+const CartCheckoutFlow = ({
+  cart = [],
+  onUpdateQuantity,
+  onRemoveItem,
+  onClearCart,
+  cartTotal = 0
+}) => {
   const [currentStep, setCurrentStep] = useState('cart');
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: 'Eco-Friendly Bamboo Phone Case',
-      price: 29.99,
-      image: 'https://images.unsplash.com/photo-1556656793-08538906a9f8?w=300&h=300&fit=crop',
-      category: 'Electronics',
-      quantity: 2,
-      rating: 4.5,
-      reviews: 128,
-      ecoScore: 95,
-      carbonNeutral: true
-    },
-    {
-      id: 2,
-      name: 'Sustainable Cotton T-Shirt',
-      price: 24.99,
-      image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop',
-      category: 'Fashion',
-      quantity: 1,
-      rating: 4.8,
-      reviews: 89,
-      ecoScore: 88,
-      carbonNeutral: true
-    },
-    {
-      id: 3,
-      name: 'Solar Power Bank',
-      price: 49.99,
-      image: 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=300&h=300&fit=crop',
-      category: 'Electronics',
-      quantity: 1,
-      rating: 4.6,
-      reviews: 156,
-      ecoScore: 92,
-      carbonNeutral: true
-    }
-  ]);
+  const [user, setUser] = useState(null);
 
   const [shippingAddress, setShippingAddress] = useState({
     fullName: '',
@@ -79,27 +48,28 @@ const CartCheckoutFlow = () => {
   });
 
   const [orderNumber, setOrderNumber] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const updateQuantity = (id, change) => {
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id
-          ? { ...item, quantity: Math.max(0, item.quantity + change) }
-          : item
-      ).filter(item => item.quantity > 0)
-    );
-  };
-
-  const removeItem = (id) => {
-    setCartItems(items => items.filter(item => item.id !== id));
-  };
-
-  const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('user'));
+    if (userData) {
+      setUser(userData);
+      // Pre-fill shipping address if available
+      if (userData.address) {
+        setShippingAddress({
+          fullName: userData.name || '',
+          address: userData.address.street || '',
+          city: userData.address.city || '',
+          state: userData.address.state || '',
+          zipCode: userData.address.zipCode || '',
+          country: userData.address.country || ''
+        });
+      }
+    }
+  }, []);
 
   const getTotalItems = () => {
-    return cartItems.reduce((total, item) => total + item.quantity, 0);
+    return cart.reduce((total, item) => total + item.quantity, 0);
   };
 
   const getEcoImpact = () => {
@@ -109,14 +79,64 @@ const CartCheckoutFlow = () => {
     return { treesPlanted, carbonOffset };
   };
 
-  const handleAddressSubmit = () => {
+  const handleAddressSubmit = (e) => {
+    e.preventDefault();
+    const requiredFields = ['fullName', 'address', 'city', 'state', 'zipCode', 'country'];
+    const missingFields = requiredFields.filter(field => !shippingAddress[field]);
+
+    if (missingFields.length > 0) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     setCurrentStep('payment');
   };
 
-  const handlePaymentSubmit = () => {
-    const orderNum = 'ECO-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    setOrderNumber(orderNum);
-    setCurrentStep('confirmation');
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!user) {
+      toast.error('Please login to complete your order');
+      return;
+    }
+
+    if (cart.length === 0) {
+      toast.error('Your cart is empty');
+      return;
+    }
+
+    // Validate payment details
+    if (paymentMethod === 'card') {
+      const requiredFields = ['cardNumber', 'expiryDate', 'cvv', 'cardholderName'];
+      const missingFields = requiredFields.filter(field => !cardDetails[field]);
+
+      if (missingFields.length > 0) {
+        toast.error('Please fill in all card details');
+        return;
+      }
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const orderNum = 'ECO-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+      setOrderNumber(orderNum);
+
+      // Clear cart after successful order
+      if (onClearCart) {
+        onClearCart();
+      }
+
+      toast.success('Order placed successfully!');
+      setCurrentStep('confirmation');
+    } catch (error) {
+      toast.error('Failed to process payment. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const CartPage = () => (
@@ -140,7 +160,7 @@ const CartCheckoutFlow = () => {
       </div>
 
       {/* Eco Impact Card */}
-      {cartItems.length > 0 && (
+      {cart.length > 0 && (
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-violet-200/50">
           <div className="flex items-center space-x-2 mb-4">
             <Leaf className="w-6 h-6 text-green-500" />
@@ -159,7 +179,7 @@ const CartCheckoutFlow = () => {
         </div>
       )}
 
-      {cartItems.length === 0 ? (
+      {cart.length === 0 ? (
         <div className="text-center py-16">
           <div className="relative inline-block mb-8">
             <div className="w-32 h-32 bg-gradient-to-r from-violet-200 to-purple-200 rounded-full flex items-center justify-center">
@@ -175,20 +195,18 @@ const CartCheckoutFlow = () => {
       ) : (
         <>
           <div className="space-y-6">
-            {cartItems.map(item => (
-              <div key={item.id} className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-violet-200/50 hover:shadow-xl transition-all duration-300">
+            {cart.map(item => (
+              <div key={item._id} className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-violet-200/50 hover:shadow-xl transition-all duration-300">
                 <div className="flex flex-col lg:flex-row gap-6">
                   <div className="relative">
                     <img
-                      src={item.image}
+                      src={item.image || item.images?.[0] || '/placeholder-image.jpg'}
                       alt={item.name}
                       className="w-32 h-32 object-cover rounded-xl shadow-lg"
                     />
-                    {item.carbonNeutral && (
-                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full flex items-center justify-center shadow-lg">
-                        <Leaf className="w-4 h-4 text-white" />
-                      </div>
-                    )}
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full flex items-center justify-center shadow-lg">
+                      <Leaf className="w-4 h-4 text-white" />
+                    </div>
                   </div>
 
                   <div className="flex-1">
@@ -203,14 +221,14 @@ const CartCheckoutFlow = () => {
                           <Star
                             key={i}
                             className={`w-4 h-4 ${
-                              i < Math.floor(item.rating)
+                              i < Math.floor(item.rating || 4.5)
                                 ? 'fill-yellow-400 text-yellow-400'
                                 : 'text-gray-300'
                             }`}
                           />
                         ))}
                         <span className="text-sm text-gray-600 ml-2">
-                          {item.rating} ({item.reviews} reviews)
+                          {item.rating || 4.5} ({item.reviews || 0} reviews)
                         </span>
                       </div>
                     </div>
@@ -221,18 +239,18 @@ const CartCheckoutFlow = () => {
                       </span>
                       <div className="flex items-center space-x-2">
                         <Award className="w-4 h-4 text-green-500" />
-                        <span className="text-sm text-green-600 font-medium">Eco Score: {item.ecoScore}/100</span>
+                        <span className="text-sm text-green-600 font-medium">Eco-Friendly</span>
                       </div>
                     </div>
 
                     <div className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                      ${item.price}
+                      ${item.price.toFixed(2)}
                     </div>
                   </div>
 
                   <div className="flex flex-col items-end justify-between space-y-4">
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => onRemoveItem(item._id)}
                       className="p-3 text-red-500 hover:bg-red-50 rounded-full transition-colors group-hover:scale-110"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -240,14 +258,14 @@ const CartCheckoutFlow = () => {
 
                     <div className="flex items-center space-x-3 bg-gray-50 rounded-full p-2">
                       <button
-                        onClick={() => updateQuantity(item.id, -1)}
+                        onClick={() => onUpdateQuantity(item._id, item.quantity - 1)}
                         className="p-2 bg-white hover:bg-gray-100 rounded-full transition-colors shadow-sm"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
                       <span className="w-8 text-center font-bold text-lg">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.id, 1)}
+                        onClick={() => onUpdateQuantity(item._id, item.quantity + 1)}
                         className="p-2 bg-white hover:bg-gray-100 rounded-full transition-colors shadow-sm"
                       >
                         <Plus className="w-4 h-4" />
@@ -264,7 +282,7 @@ const CartCheckoutFlow = () => {
             <div className="flex items-center justify-between mb-6">
               <span className="text-2xl font-bold text-gray-900">Order Total</span>
               <span className="text-4xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                ${getTotalPrice().toFixed(2)}
+                ${cartTotal.toFixed(2)}
               </span>
             </div>
 
@@ -294,8 +312,9 @@ const CartCheckoutFlow = () => {
             </div>
 
             <button
-              onClick={() => setCurrentStep('address')}
-              className="group relative w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-4 rounded-2xl font-semibold hover:from-violet-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden"
+              onClick={() => user ? setCurrentStep('address') : toast.error('Please login to checkout')}
+              disabled={cart.length === 0}
+              className="group relative w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-4 rounded-2xl font-semibold hover:from-violet-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <div className="relative z-10 flex items-center justify-center space-x-2">
                 <span className="text-lg">Proceed to Checkout</span>
@@ -325,7 +344,7 @@ const CartCheckoutFlow = () => {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <form onSubmit={handleAddressSubmit} className="space-y-6">
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-violet-200/50">
           <div className="flex items-center space-x-2 mb-6">
             <MapPin className="w-6 h-6 text-violet-600" />
@@ -334,7 +353,7 @@ const CartCheckoutFlow = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name *</label>
               <input
                 type="text"
                 required
@@ -346,7 +365,7 @@ const CartCheckoutFlow = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Address *</label>
               <input
                 type="text"
                 required
@@ -358,7 +377,7 @@ const CartCheckoutFlow = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">City *</label>
               <input
                 type="text"
                 required
@@ -370,7 +389,7 @@ const CartCheckoutFlow = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">State</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">State *</label>
               <input
                 type="text"
                 required
@@ -382,7 +401,7 @@ const CartCheckoutFlow = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">ZIP Code</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">ZIP Code *</label>
               <input
                 type="text"
                 required
@@ -394,7 +413,7 @@ const CartCheckoutFlow = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Country *</label>
               <select
                 required
                 value={shippingAddress.country}
@@ -412,7 +431,7 @@ const CartCheckoutFlow = () => {
         </div>
 
         <button
-          onClick={handleAddressSubmit}
+          type="submit"
           className="group relative w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-4 rounded-2xl font-semibold hover:from-violet-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden"
         >
           <div className="relative z-10 flex items-center justify-center space-x-2">
@@ -421,7 +440,7 @@ const CartCheckoutFlow = () => {
           </div>
           <div className="absolute inset-0 bg-gradient-to-r from-violet-700 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         </button>
-      </div>
+      </form>
     </div>
   );
 
@@ -441,7 +460,7 @@ const CartCheckoutFlow = () => {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <form onSubmit={handlePaymentSubmit} className="space-y-6">
         {/* Payment Method */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-violet-200/50">
           <div className="flex items-center space-x-2 mb-6">
@@ -467,7 +486,7 @@ const CartCheckoutFlow = () => {
           {paymentMethod === 'card' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Cardholder Name</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Cardholder Name *</label>
                 <input
                   type="text"
                   required
@@ -479,7 +498,7 @@ const CartCheckoutFlow = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Card Number</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Card Number *</label>
                 <input
                   type="text"
                   required
@@ -491,7 +510,7 @@ const CartCheckoutFlow = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Expiry Date</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Expiry Date *</label>
                 <input
                   type="text"
                   required
@@ -503,7 +522,7 @@ const CartCheckoutFlow = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">CVV</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">CVV *</label>
                 <input
                   type="text"
                   required
@@ -523,7 +542,7 @@ const CartCheckoutFlow = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Subtotal</span>
-              <span className="font-semibold">${getTotalPrice().toFixed(2)}</span>
+              <span className="font-semibold">${cartTotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Shipping</span>
@@ -531,30 +550,34 @@ const CartCheckoutFlow = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Tax</span>
-              <span className="font-semibold">${(getTotalPrice() * 0.08).toFixed(2)}</span>
+              <span className="font-semibold">${(cartTotal * 0.08).toFixed(2)}</span>
             </div>
             <div className="border-t pt-4 flex justify-between items-center">
               <span className="text-xl font-bold text-gray-900">Total</span>
               <span className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                ${(getTotalPrice() * 1.08).toFixed(2)}
+                ${(cartTotal * 1.08).toFixed(2)}
               </span>
             </div>
           </div>
         </div>
 
         <button
-          onClick={handlePaymentSubmit}
-          className="group relative w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-4 rounded-2xl font-semibold hover:from-violet-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden"
+          type="submit"
+          disabled={isProcessing}
+          className="group relative w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-4 rounded-2xl font-semibold hover:from-violet-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
           <div className="relative z-10 flex items-center justify-center space-x-2">
             <Shield className="w-5 h-5" />
-            <span className="text-lg">Complete Secure Payment</span>
+            <span className="text-lg">
+              {isProcessing ? 'Processing...' : 'Complete Secure Payment'}
+            </span>
           </div>
           <div className="absolute inset-0 bg-gradient-to-r from-violet-700 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         </button>
-      </div>
+      </form>
     </div>
   );
+
 
 
   const ConfirmationPage = () => (

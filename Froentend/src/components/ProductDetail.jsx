@@ -75,9 +75,8 @@ const ProductDetail = ({ onAddToCart }) => {
   const images = [product.image, product.hoverImage];
 
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      onAddToCart(product);
-    }
+    // Pass the quantity directly instead of calling multiple times
+    onAddToCart(product, quantity);
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 relative overflow-hidden">

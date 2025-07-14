@@ -20,9 +20,6 @@ const Newsletter = () => {
 
   return (
     <section className="relative py-20 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 overflow-hidden">
-
-
-
       {/* Floating Sparkles */}
       <div className="absolute top-20 left-1/4 animate-bounce animation-delay-1000">
         <Sparkles className="w-6 h-6 text-violet-400" />

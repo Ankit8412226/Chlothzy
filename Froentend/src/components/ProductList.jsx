@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/axios';
 import ProductCard from './ProductCard';
 
-const ProductList = ({ onAddToCart }) => {
+const ProductList = ({ onAddToCart, cartLoading }) => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -38,7 +38,15 @@ const ProductList = ({ onAddToCart }) => {
           : '/products/';
         const response = await api.get(endpoint);
         const allProducts = response.data?.products || [];
-        setProducts(allProducts.slice(0, 10));
+
+        // Ensure each product has the required fields including _id
+        const formattedProducts = allProducts.slice(0, 10).map(product => ({
+          ...product,
+          _id: product._id || product.id, // Ensure _id is available
+          id: product._id || product.id // Keep both for compatibility
+        }));
+
+        setProducts(formattedProducts);
 
       } catch (error) {
         toast.error('Failed to load products');
@@ -66,6 +74,22 @@ const ProductList = ({ onAddToCart }) => {
     return category ? category.name : '';
   };
 
+  // Handle add to cart with loading state
+  const handleAddToCart = async (product) => {
+    // Ensure product has _id
+    if (!product._id && !product.id) {
+      toast.error('Product ID is missing');
+      return;
+    }
+
+    const productWithId = {
+      ...product,
+      _id: product._id || product.id
+    };
+
+    await onAddToCart(productWithId);
+  };
+
   return (
     <section className="relative py-20 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
@@ -87,13 +111,17 @@ const ProductList = ({ onAddToCart }) => {
           {/* Category Buttons */}
           <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-12">
             {loading ? (
-              <span className="text-gray-500">Loading categories...</span>
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-violet-600"></div>
+                <span className="text-gray-500">Loading categories...</span>
+              </div>
             ) : (
               <>
                 {/* All Products Button */}
                 <button
                   onClick={() => handleCategoryChange('')}
-                  className={`group relative px-6 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 overflow-hidden ${
+                  disabled={productsLoading}
+                  className={`group relative px-6 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed ${
                     selectedCategory === ''
                       ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg scale-105'
                       : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white hover:text-violet-600 shadow-md hover:shadow-xl border border-violet-200/50'
@@ -115,7 +143,8 @@ const ProductList = ({ onAddToCart }) => {
                   <button
                     key={category._id}
                     onClick={() => handleCategoryChange(category._id)}
-                    className={`group relative px-6 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 overflow-hidden ${
+                    disabled={productsLoading}
+                    className={`group relative px-6 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed ${
                       selectedCategory === category._id
                         ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg scale-105'
                         : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white hover:text-violet-600 shadow-md hover:shadow-xl border border-violet-200/50'
@@ -150,6 +179,15 @@ const ProductList = ({ onAddToCart }) => {
             Discover our carefully curated selection of eco-friendly products that combine
             sustainability with style and functionality.
           </p>
+
+          {/* Show selected category */}
+          {selectedCategory && getSelectedCategoryName() && (
+            <div className="mt-4">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-violet-100 text-violet-800">
+                Showing: {getSelectedCategoryName()}
+              </span>
+            </div>
+          )}
         </div>
 
         {productsLoading ? (
@@ -178,7 +216,10 @@ const ProductList = ({ onAddToCart }) => {
                 No Products Found
               </h3>
               <p className="text-gray-600 text-lg leading-relaxed">
-                Try selecting a different category or check back later for new arrivals.
+                {selectedCategory
+                  ? `No products found in ${getSelectedCategoryName()} category. Try selecting a different category.`
+                  : 'No products available at the moment. Please check back later for new arrivals.'
+                }
               </p>
             </div>
           </div>
@@ -187,7 +228,7 @@ const ProductList = ({ onAddToCart }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {products.map((product, index) => (
                 <div
-                  key={product.id}
+                  key={product._id || product.id}
                   className="transform hover:scale-105 transition-all duration-300"
                   style={{
                     animationDelay: `${index * 100}ms`,
@@ -195,7 +236,8 @@ const ProductList = ({ onAddToCart }) => {
                 >
                   <ProductCard
                     product={product}
-                    onAddToCart={onAddToCart}
+                    onAddToCart={handleAddToCart}
+                    cartLoading={cartLoading}
                   />
                 </div>
               ))}
